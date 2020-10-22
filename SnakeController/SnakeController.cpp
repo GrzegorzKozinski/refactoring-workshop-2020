@@ -62,34 +62,45 @@ Controller::Controller(IPort& p_displayPort, IPort& p_foodPort, IPort& p_scorePo
         throw ConfigurationError();
     }
 }
-
+bool Controller::isBodyEaten(Segment& newHead)
+{
+    for (auto segment : m_segments) { //dla kazdego segmentu jesli head jes na poz ciala game over
+            if (segment.x == newHead.x and segment.y == newHead.y) {
+                m_scorePort.send(std::make_unique<EventT<LooseInd>>());
+                return true;
+            }
+        }
+        return false;
+}
 void Controller::receive(std::unique_ptr<Event> e)
 {
-    try {
+    try { // duuuzy try
         auto const& timerEvent = *dynamic_cast<EventT<TimeoutInd> const&>(*e);
-
+        
         Segment const& currentHead = m_segments.front();
 
         Segment newHead;
         newHead.x = currentHead.x + ((m_currentDirection & 0b01) ? (m_currentDirection & 0b10) ? 1 : -1 : 0);
         newHead.y = currentHead.y + (not (m_currentDirection & 0b01) ? (m_currentDirection & 0b10) ? 1 : -1 : 0);
         newHead.ttl = currentHead.ttl;
-
-        bool lost = false;
-
-        for (auto segment : m_segments) {
+        
+        bool lost = isBodyEaten(newHead);
+        //lost = isBodyEaten(newHead);
+/*
+        for (auto segment : m_segments) { //dla kazdego segmentu jesli head jes na poz ciala game over
             if (segment.x == newHead.x and segment.y == newHead.y) {
                 m_scorePort.send(std::make_unique<EventT<LooseInd>>());
                 lost = true;
                 break;
             }
         }
+        */
 
-        if (not lost) {
-            if (std::make_pair(newHead.x, newHead.y) == m_foodPosition) {
+        if (not lost) { // 1 if not lost
+            if (std::make_pair(newHead.x, newHead.y) == m_foodPosition) { // ifFoodEaten
                 m_scorePort.send(std::make_unique<EventT<ScoreInd>>());
                 m_foodPort.send(std::make_unique<EventT<FoodReq>>());
-            } else if (newHead.x < 0 or newHead.y < 0 or
+            } else if (newHead.x < 0 or newHead.y < 0 or    // if out of bounds pos
                        newHead.x >= m_mapDimension.first or
                        newHead.y >= m_mapDimension.second) {
                 m_scorePort.send(std::make_unique<EventT<LooseInd>>());
@@ -108,7 +119,7 @@ void Controller::receive(std::unique_ptr<Event> e)
             }
         }
 
-        if (not lost) {
+        if (not lost) { //2 not lost
             m_segments.push_front(newHead);
             DisplayInd placeNewHead;
             placeNewHead.x = newHead.x;
@@ -124,7 +135,7 @@ void Controller::receive(std::unique_ptr<Event> e)
                     [](auto const& segment){ return not (segment.ttl > 0); }),
                 m_segments.end());
         }
-    } catch (std::bad_cast&) {
+    } catch (std::bad_cast&) { //duuuzy catch
         try {
             auto direction = dynamic_cast<EventT<DirectionInd> const&>(*e)->direction;
 
