@@ -4,11 +4,13 @@
 #include <memory>
 #include <functional>
 
+#include "Food.hpp"
 #include "IEventHandler.hpp"
 #include "SnakeInterface.hpp"
 
 class Event;
 class IPort;
+class Food;
 
 namespace Snake
 {
@@ -33,12 +35,13 @@ public:
     void receive(std::unique_ptr<Event> e) override;
 
 private:
+    Food food();
     IPort& m_displayPort;
     IPort& m_foodPort;
     IPort& m_scorePort;
 
     std::pair<int, int> m_mapDimension;
-    std::pair<int, int> m_foodPosition;
+    //std::pair<int, int> m_foodPosition; // moved to food class
 
     struct Segment
     {
@@ -63,11 +66,11 @@ private:
     void removeTailSegment();
 
     bool isPositionOutsideMap(int x, int y) const;
-
+/*  moved to food class
     void updateFoodPosition(int x, int y, std::function<void()> clearPolicy);
     void sendClearOldFood();
     void sendPlaceNewFood(int x, int y);
-
+*/
     bool m_paused;
 };
 
